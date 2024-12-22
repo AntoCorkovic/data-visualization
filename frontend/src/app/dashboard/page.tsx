@@ -1,40 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import React, { useCallback } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DataTable } from "@/components/ui/data-table";
-import { PieChartComponent } from "@/components/ui/pie-chart";
+import { supabase } from "@/utils/supabase/client";
 
-export default function Page() {
-  const [currentView, setCurrentView] = useState("data-table"); // Default view: DataTable
+export default function DashboardPage() {
+  const handleFileUpload = useCallback(async (file: File) => {
+    console.log("File received for upload in handleFileUpload:", file);
 
-  // Sample data for PieChartComponent
-  const pieChartData = {
-    labels: ["Red", "Blue", "Yellow", "Teal", "Purple"],
-    values: [300, 50, 100, 150, 200],
-  };
+    try {
+      // Target the correct route
+      const { data, error } = await supabase.storage
+        .from("file-storage")
+        .upload(`uploads/${file.name}`, file);
 
-  // Function to render the view dynamically
-  const renderView = () => {
-    switch (currentView) {
-      case "data-table":
-        return <DataTable />;
-      case "charts":
-        return <PieChartComponent data={pieChartData} />; // Pass data prop here
-      default:
-        return <div>Select a view from the sidebar</div>;
+      if (error) {
+        console.error("Error uploading file:", error.message);
+        return "Upload failed.";
+      }
+
+      console.log("Uploaded file data:", data);
+      return `File uploaded: ${file.name}`;
+    } catch (err) {
+      console.error("Unexpected error during file upload:", err);
+      return "An unexpected error occurred.";
     }
-  };
+  }, []);
+
+  console.log("handleFileUpload in DashboardPage (type):", typeof handleFileUpload);
 
   return (
     <div className="flex h-screen">
-      {/* Sidebar */}
-      <AppSidebar setCurrentView={setCurrentView} />
-      
-      {/* Main Content Area */}
-      <div className="flex-1 p-6 overflow-auto">
-        {renderView()}
-      </div>
+      <AppSidebar setCurrentView={() => {}} />
+      <main className="flex-1 p-6">
+        <DataTable onFileUpload={handleFileUpload} /> {/* Explicitly pass the function */}
+      </main>
     </div>
   );
 }
